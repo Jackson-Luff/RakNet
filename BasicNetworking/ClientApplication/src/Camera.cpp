@@ -4,6 +4,13 @@
 #include <GLFW/glfw3.h>
 #include <glm/ext.hpp>
 
+Camera::Camera()
+	: m_speed(10),
+	m_up(0, 1, 0),
+	m_transform(1),
+	m_view(1)
+{}
+
 Camera::Camera(float fovY, float aspectRatio, float near, float far)
 	: m_speed(10),
 	m_up(0,1,0),

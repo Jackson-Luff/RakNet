@@ -1,8 +1,10 @@
+#include <time.h>
 #include "BasicNetworking.h"
-#include <GLFW/glfw3.h>
 
 int main() {
 	
+	srand((unsigned int)time(NULL));
+
 	BaseApplication* app = new BasicNetworkingApplication();
 	if (app->startup())
 		app->run();
