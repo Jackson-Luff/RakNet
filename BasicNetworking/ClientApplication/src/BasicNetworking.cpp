@@ -67,8 +67,8 @@ void BasicNetworkingApplication::draw()
 	{
 		GameObject& obj = it;
 
-		Gizmos::addSphere(glm::vec3(obj.fXPos, 0, obj.fZPos),
-			2, 32, 32, glm::vec4(obj.fRedColour, obj.fGreenColour, obj.fBlueColour, 1));
+		Gizmos::addSphere( obj.position,
+			2, 32, 32, glm::vec4(obj.colour, 1));
 	}
 
 	Gizmos::draw(m_pCamera->getProjectionView());
@@ -165,14 +165,11 @@ void BasicNetworkingApplication::readObjectDataFromServer(RakNet::BitStream& bsI
 	GameObject tempGameObject;
 
 	// Read in the information from the packet
-	bsIn.Read(tempGameObject.fXPos);
-	bsIn.Read(tempGameObject.fZPos);
-	bsIn.Read(tempGameObject.fRedColour);
-	bsIn.Read(tempGameObject.fGreenColour);
-	bsIn.Read(tempGameObject.fBlueColour);
+	bsIn.Read(tempGameObject.velocity);
+	bsIn.Read(tempGameObject.position);
+	bsIn.Read(tempGameObject.colour);
 	bsIn.Read(tempGameObject.uiOwnerClientID);
 	bsIn.Read(tempGameObject.uiObjectID);
-	std::cout << "Obj ID: " << tempGameObject.uiObjectID << std::endl;
 	// Check to see whether or not this object is already 
 	// stored in our local object list
 
@@ -186,11 +183,9 @@ void BasicNetworkingApplication::readObjectDataFromServer(RakNet::BitStream& bsI
 
 			// Update the game object
 			GameObject& obj = it_obj;
-			obj.fXPos			= tempGameObject.fXPos;
-			obj.fZPos			= tempGameObject.fZPos;
-			obj.fRedColour		= tempGameObject.fRedColour;
-			obj.fGreenColour	= tempGameObject.fGreenColour;
-			obj.fBlueColour		= tempGameObject.fBlueColour;
+			obj.velocity		= tempGameObject.velocity;
+			obj.position		= tempGameObject.position;
+			obj.colour			= tempGameObject.colour;
 			obj.uiOwnerClientID = tempGameObject.uiOwnerClientID;
 			obj.uiObjectID		= tempGameObject.uiObjectID;
 		}
@@ -215,19 +210,15 @@ void BasicNetworkingApplication::createGameObject()
 	RakNet::BitStream bsOut;
 
 	GameObject tempGameObject;
-	tempGameObject.fXPos = 0.0f;
-	tempGameObject.fZPos = 0.0f;
-	tempGameObject.fRedColour = m_myColour.r;
-	tempGameObject.fGreenColour = m_myColour.g;
-	tempGameObject.fBlueColour = m_myColour.b;
+	tempGameObject.velocity = glm::vec3(0.0f);
+	tempGameObject.position = glm::vec3(0.0f);
+	tempGameObject.colour = glm::vec3(m_myColour);
 
 	// Ensure that the write order is the same as the read order on the server!
 	bsOut.Write((RakNet::MessageID)GameMessages::ID_CLIENT_CREATE_OBJECT);
-	bsOut.Write(tempGameObject.fXPos);
-	bsOut.Write(tempGameObject.fZPos);
-	bsOut.Write(tempGameObject.fRedColour);
-	bsOut.Write(tempGameObject.fGreenColour);
-	bsOut.Write(tempGameObject.fBlueColour);
+	bsOut.Write(tempGameObject.velocity);
+	bsOut.Write(tempGameObject.position);
+	bsOut.Write(tempGameObject.colour);
 
 	m_pPeerInterface->Send(&bsOut, HIGH_PRIORITY, RELIABLE_ORDERED,
 		0, RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);
@@ -247,12 +238,12 @@ void BasicNetworkingApplication::moveClientObject(float deltaTime)
 
 	if (glfwGetKey(m_window, GLFW_KEY_UP))
 	{
-		myClientObject.fZPos += 5 * deltaTime;
+		myClientObject.position.z += 5 * deltaTime;
 		bUpdatedObjectPosition = true;
 	}
 	if (glfwGetKey(m_window, GLFW_KEY_DOWN))
 	{
-		myClientObject.fZPos -= 5 * deltaTime;
+		myClientObject.position.z -= 5 * deltaTime;
 		bUpdatedObjectPosition = true;
 	}
 
@@ -267,8 +258,7 @@ void BasicNetworkingApplication::sendUpdatedObjectPositionToServer(const GameObj
 	// Ensure that the write order is the same as the read order on the server!
 	bsOut.Write((RakNet::MessageID)GameMessages::ID_CLIENT_UPDATE_OBJECT_POSITION);
 	bsOut.Write(objectToUpdate.uiObjectID);
-	bsOut.Write(objectToUpdate.fXPos);
-	bsOut.Write(objectToUpdate.fZPos);
+	bsOut.Write(objectToUpdate.position);
 
 	m_pPeerInterface->Send(&bsOut, HIGH_PRIORITY, RELIABLE_ORDERED,
 		0, RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);

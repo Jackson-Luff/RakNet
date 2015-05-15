@@ -70,6 +70,13 @@ void Server::handleNetworkMessages()
 				updateClientPositionOnServer(bsIn);
 				break;
 			}
+			case ID_CLIENT_UPDATE_OBJECT_VELOCITY:
+			{
+				RakNet::BitStream bsIn(packet->data, packet->length, false);
+				bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
+				updateClientVelocityOnServer(bsIn);
+				break;
+			}
 			default:
 				std::cout << "Received a message with a unknown id: " << packet->data[0];
 				break;
@@ -118,11 +125,9 @@ void Server::createNewObject(RakNet::BitStream& bsIn, RakNet::SystemAddress& own
 	GameObject newGameObject;
 
 	// Read in the information from the packet
-	bsIn.Read(newGameObject.fXPos);
-	bsIn.Read(newGameObject.fZPos);
-	bsIn.Read(newGameObject.fRedColour);
-	bsIn.Read(newGameObject.fGreenColour);
-	bsIn.Read(newGameObject.fBlueColour);
+	bsIn.Read(newGameObject.velocity);
+	bsIn.Read(newGameObject.position);
+	bsIn.Read(newGameObject.colour);
 
 	newGameObject.uiOwnerClientID = systemAddressToClientID(ownerSysAddress);
 	newGameObject.uiObjectID = m_uiObjectCounter++;
@@ -146,12 +151,31 @@ void Server::updateClientPositionOnServer(RakNet::BitStream& bsIn)
 	{
 		if (obj.uiObjectID == index)
 		{
-			bsIn.Read(obj.fXPos);
-			bsIn.Read(obj.fZPos);
+			bsIn.Read(obj.position);
 			sendGameObjectToAllClients(obj, false);
 		}
 	}
 
+}
+
+void Server::updateClientVelocityOnServer(RakNet::BitStream& bsIn)
+{
+	// Nothing to update
+	if (m_gameObjects.size() == 0) return;
+
+	unsigned int index = 0;
+
+	// Read in ID and source object from ID
+	bsIn.Read(index);
+
+	for (auto& obj : m_gameObjects)
+	{
+		if (obj.uiObjectID == index)
+		{
+			bsIn.Read(obj.velocity);
+			sendGameObjectToAllClients(obj, false);
+		}
+	}
 }
 
 void Server::sendGameObjectToAllClients(GameObject& gameObject, bool bSendToOwner)
@@ -159,11 +183,9 @@ void Server::sendGameObjectToAllClients(GameObject& gameObject, bool bSendToOwne
 	RakNet::BitStream bsOut;
 	bsOut.Write((RakNet::MessageID)GameMessages::ID_SERVER_FULL_OBJECT_DATA);
 
-	bsOut.Write(gameObject.fXPos);
-	bsOut.Write(gameObject.fZPos);
-	bsOut.Write(gameObject.fRedColour);
-	bsOut.Write(gameObject.fGreenColour);
-	bsOut.Write(gameObject.fBlueColour);
+	bsOut.Write(gameObject.velocity);
+	bsOut.Write(gameObject.position);
+	bsOut.Write(gameObject.colour);
 	bsOut.Write(gameObject.uiOwnerClientID);
 	bsOut.Write(gameObject.uiObjectID);
 
@@ -187,12 +209,9 @@ void Server::sendAllGameObjectsToClient(RakNet::SystemAddress systemAddress)
 		RakNet::BitStream bsOut;
 		// Ensure that the write order is the same as the read order on the server!
 		bsOut.Write((RakNet::MessageID)GameMessages::ID_SERVER_FULL_OBJECT_DATA);
-		bsOut.Write(obj.fXPos);
-		bsOut.Write(obj.fZPos);
-
-		bsOut.Write(obj.fRedColour);
-		bsOut.Write(obj.fGreenColour);
-		bsOut.Write(obj.fBlueColour);
+		bsOut.Write(obj.velocity);
+		bsOut.Write(obj.position);
+		bsOut.Write(obj.colour);
 
 		bsOut.Write(obj.uiOwnerClientID);
 		bsOut.Write(obj.uiObjectID);

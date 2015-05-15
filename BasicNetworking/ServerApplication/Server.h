@@ -32,6 +32,7 @@ protected:
 
 	void createNewObject(RakNet::BitStream& bsIn, RakNet::SystemAddress& ownerSysAddress);
 	void updateClientPositionOnServer(RakNet::BitStream& bsIn);
+	void updateClientVelocityOnServer(RakNet::BitStream& bsIn);
 	void sendGameObjectToAllClients(GameObject& gameObject, bool bSendToOwner);
 
 	void sendClientIDToClient(unsigned int uiClientID);
